@@ -86,3 +86,16 @@ prop_dmg_events[, c("EVTYPE", "prop_dmg")]
 crop_dmg_events[, c("EVTYPE", "crop_dmg")]
 
 #Results
+
+library(ggplot2)
+library(gridExtra)
+
+p1 <- ggplot(data = fatalData,
+             aes(x=EVTYPE, fatalities, y=fatalities, fill=fatalities))+
+    geom_bar(stat="identity") +
+    coord_flip() +
+    ylab("Total number of fatalities") +
+    xlab("Event type") +
+    theme(legend.position="none")
+
+             
