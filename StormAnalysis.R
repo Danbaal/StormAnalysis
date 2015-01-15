@@ -1,9 +1,23 @@
 
 #Data Processing
 
-#Loading the Data
-path <- "C:/Users/Dani/DataScience/Reproducible Research/StormAnalysis/repdata-data-StormData.csv"
-stormData <- read.csv(file = path)
+#Function to download the data ----------------
+read_data <- function(fileName, source_url) {  
+  if (!file.exists(fileName)) {
+    download.file(source_url, destfile = fileName, method = "curl")
+  }
+  dataset <- read.csv(fileName, stringsAsFactors=FALSE)
+  dataset
+}
+#-------------------------------------------
+
+setwd("~/DataScience/StormAnalysis")
+
+#Downloading and Loading the Data
+stormData <- read_data("repdata-data-StormData.csv.bz2", 
+                       "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2")
+
+# ------ Cleanin the Data -----
 
 #number of unique event types
 length(unique(stormData$EVTYPE))
@@ -11,6 +25,18 @@ length(unique(stormData$EVTYPE))
 #Cleaning the Data
 events <- tolower(stormData$EVTYPE) #all characters to lowercase
 events <- gsub("[[:blank:][:punct:]+]", " ", events) #cleaning punct. characters
+
+unique(events[grepl(".*tornado.*",events)]) #look for uniques tornados
+unique(events[grepl(".*flood.*",events)]) #look for uniques floods
+unique(events[ (grepl(".*tstm.*",events) | grepl(".*thunderstorm.*",events))  & grepl(".*wind.*",events)]) #Thunderstorm winds
+unique(events[grepl(".*hurricane.*",events)]) #find hurricanes
+unique(events[grepl(".*drought.*",events)]) #find droughts
+unique(events[grepl(".*heat.*",events)]) #find heats... do after drought
+unique(events[grepl(".*hail.*",events)])# find hail
+unique(events[grepl(".*ice.*",events) | grepl(".*snow.*",events)]) # ice and snow
+
+
+events <- gsub(".*flood.*","flood", events) #grouping all kinds of floods
 
 #number of unique event types after cleaning
 length(unique(events))
@@ -20,13 +46,52 @@ stormData$EVTYPE <- events
 
 #No Further data processing will be perform
 
+#---- Sumarize Data ---------
+
+#eventsData <- ddply(stormData, .(EVTYPE), summarise,
+#                    fatalities = sum(FATALITIES),
+#                    injuries = sum(INJURIES))
+
+#----------------------------
+
+
+#---- Time Line Data --------
+stormTimeLine <- ddply(stormData, 
+                       .(EVTYPE, FATALITIES, INJURIES),
+                       summarise,
+                       DATE = as.Date(BGN_DATE, '%m/%d/%Y'))
+#Order by date
+stormTimeLine <- stormTimeLine[order(stormTimeLine$DATE),]
+#Get dates from 2001
+stormTimeLine <- subset(stormTimeLine, as.Date("1/1/2001" , "%m/%d/%Y") < DATE)
+#Delete irrelevant events
+stormTimeLine <- subset(stormTimeLine, FATALITIES != 0 | INJURIES != 0 )
+#CumSums
+stormTimeLine$FATCUMSUM = cumsum(stormTimeLine$FATALITIES)
+stormTimeLine$INJCUMSUM = cumsum(stormTimeLine$INJURIES)
+head(stormTimeLine)
+
+library(ggplot2)
+qplot(data = stormTimeLine, DATE, FATCUMSUM, geom="step")
+#------------------------------------------
+
+#Loading the Data
+#path <- "C:/Users/Dani/DataScience/Reproducible Research/StormAnalysis/repdata-data-StormData.csv"
+#path <- "./DataScience/repdata-data-StormData.csv"
+#stormData <- read.csv(file = path)
+
 #find the event types that are most harmful to population health
 library(plyr)
+library(ggplot2)
 
 incidents <- ddply(stormData, .(EVTYPE), summarise,
                    fatalities = sum(FATALITIES),
                    injuries = sum(INJURIES))
-head(incidents) 
+head(incidents)
+
+#qplot(data = incidents, 
+#      x=EVTYPE, y=cumsum(fatalities)) + geom_step
+
 
 fatalData <- head(incidents[order(incidents$fatalities, decreasing = T), ], 10)
 injurData <- head(incidents[order(incidents$injuries, decreasing = T), ], 10)
