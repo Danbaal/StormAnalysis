@@ -56,10 +56,10 @@ stormData$EVTYPE <- events
 
 
 #---- Time Line Data --------
-stormTimeLine <- ddply(stormData, 
-                       .(EVTYPE, FATALITIES, INJURIES),
-                       summarise,
-                       DATE = as.Date(BGN_DATE, '%m/%d/%Y'))
+
+stormTimeLine <- stormData[c('EVTYPE','FATALITIES','INJURIES')]
+stormTimeLine$DATE <- as.Date(stormData$BGN_DATE, '%m/%d/%Y')
+
 #Order by date
 stormTimeLine <- stormTimeLine[order(stormTimeLine$DATE),]
 #Get dates from 2001
