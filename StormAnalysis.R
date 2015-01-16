@@ -51,6 +51,7 @@ stormData$EVTYPE <- events
 
 #---- Sumarize Data ---------
 library(plyr)
+
 #Events types that are most harmful to population health
 casualities <- ddply(stormData, .(EVTYPE), summarise,
                     FATAL = sum(FATALITIES),
@@ -71,12 +72,33 @@ health_plot <- rbind(fatalities_p , injuries_p)
 health_plot$EVENT <- factor(health_plot$EVENT , levels = top10)
 health_plot <- health_plot[order(health_plot$EVENT, decreasing=T),]
 
-library(ggplot2)
-ggplot(health_plot, aes(x=EVENT, y=CASUALITIES, fill=TYPE)) + 
-    geom_bar(stat="identity") + 
-    scale_fill_manual(values = c("red", "orange")) +
-    theme(axis.text.x = element_text(angle = 30, hjust = 1))
-    
+#Economic loss
+
+#Convert the PROPDMGEXP and CROPDMGEXP field 
+#into a usuable factor and calculate the true damage to crops and property.
+
+stormData$PROPDMGEXP<-toupper(stormData$PROPDMGEXP)
+stormData$CROPDMGEXP<-toupper(stormData$CROPDMGEXP)
+
+stormData[stormData$PROPDMGEXP %in% c("",NA, "-","?", "+"),]$PROPDMGEXP <- 0
+stormData[stormData$PROPDMGEXP %in% c("H", "B"),]$PROPDMGEXP <- 2
+stormData[stormData$PROPDMGEXP %in% "K",]$PROPDMGEXP <- 3
+stormData[stormData$PROPDMGEXP %in% "M",]$PROPDMGEXP <- 6
+
+stormData[stormData$CROPDMGEXP %in% c("",NA,"-","?", "+"),]$CROPDMGEXP <- 0
+stormData[stormData$CROPDMGEXP %in% c("H", "B"),]$CROPDMGEXP <- 2
+stormData[stormData$CROPDMGEXP %in% "K",]$CROPDMGEXP <- 3
+stormData[stormData$CROPDMGEXP %in% "M",]$CROPDMGEXP <- 6
+
+stormData$PROPDMG <- stormData$PROPDMG * 10 ** as.numeric(stormData$PROPDMGEXP)
+stormData$CROPDMG <- stormData$CROPDMG * 10 ** as.numeric(stormData$CROPDMGEXP)
+
+econ_loss <- ddply(stormData, .(EVTYPE), summarize,
+                   PROP = sum(PROPDMG),
+                   CROP = sum(CROPDMG))
+econ_top10 <- head(econ_loss[order(econ_loss$PROP + econ_loss$CROP, decreasing=T),] , 10)
+econ_top10
+econ_top10 <- econ_top10$EVTYPE
 
 #----------------------------
 
@@ -116,7 +138,6 @@ library(ggplot2)
 #      x=EVTYPE, y=cumsum(fatalities)) + geom_step
 
 
-gggg
 
 #Top 10 events that caused largest number of deaths are
 
@@ -128,61 +149,15 @@ injurData[, c("EVTYPE", "injuries")]
 
 #Processing the date for evaluating Economic effects
 
-######################### AUX_FUNCTION #################################
-exp_transform <- function(e) {
-    # h -> hundred, k -> thousand, m -> million, b -> billion
-    if (e %in% c('h', 'H'))
-        return(2)
-    else if (e %in% c('k', 'K'))
-        return(3)
-    else if (e %in% c('m', 'M'))
-        return(6)
-    else if (e %in% c('b', 'B'))
-        return(9)
-    else if (!is.na(as.numeric(e))) # if a digit
-        return(as.numeric(e))
-    else if (e %in% c('', '-', '?', '+'))
-        return(0)
-    else {
-        stop("Invalid exponent value.")
-    }
-}
-########################################################################
-
-prop_dmg_exp <- sapply(stormData$PROPDMGEXP, FUN=exp_transform)
-stormData$prop_dmg <- stormData$PROPDMG * (10 ** prop_dmg_exp)
-crop_dmg_exp <- sapply(stormData$CROPDMGEXP, FUN=exp_transform)
-stormData$crop_dmg <- stormData$CROPDMG * (10 ** crop_dmg_exp)
-
-# Compute the economic loss by event type
-econ_loss <- ddply(stormData, .(EVTYPE), summarize,
-                   prop_dmg = sum(prop_dmg),
-                   crop_dmg = sum(crop_dmg))
-
-# filter out events that caused no economic loss
-econ_loss <- econ_loss[(econ_loss$prop_dmg > 0 | econ_loss$crop_dmg > 0), ]
-prop_dmg_events <- head(econ_loss[order(econ_loss$prop_dmg, decreasing = T), ], 10)
-crop_dmg_events <- head(econ_loss[order(econ_loss$crop_dmg, decreasing = T), ], 10)
-
-#Top 10 events that caused most property damage (in dollars) are as follows
-
-prop_dmg_events[, c("EVTYPE", "prop_dmg")]
-
-#Similarly, the events that caused biggest crop damage are
-
-crop_dmg_events[, c("EVTYPE", "crop_dmg")]
-
 #Results
 
 library(ggplot2)
 library(gridExtra)
 
-p1 <- ggplot(data = fatalData,
-             aes(x=EVTYPE, fatalities, y=fatalities, fill=fatalities))+
-    geom_bar(stat="identity") +
-    coord_flip() +
-    ylab("Total number of fatalities") +
-    xlab("Event type") +
-    theme(legend.position="none")
+
+ggplot(health_plot, aes(x=EVENT, y=CASUALITIES, fill=TYPE)) + 
+    geom_bar(stat="identity") + 
+    scale_fill_manual(values = c("red", "orange")) +
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
              
