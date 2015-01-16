@@ -11,7 +11,8 @@ read_data <- function(fileName, source_url) {
 }
 #-------------------------------------------
 
-setwd("~/DataScience/StormAnalysis")
+#setwd("~/DataScience/Reproducible Research/StormAnalysis")
+#setwd("C:/Users/Dani/DataScience/Reproducible Research/StormAnalysis")
 
 #Downloading and Loading the Data
 stormData <- read_data("repdata-data-StormData.csv.bz2", 
@@ -26,10 +27,10 @@ length(unique(stormData$EVTYPE)) #985
 events <- tolower(stormData$EVTYPE) #all characters to lowercase
 events <- gsub("[[:blank:][:punct:]+]", " ", events) #cleaning punct. characters
 
-#----------------------------------Exploring grouping---------------------------------------------------
+#----------------------------------Exploring grouping-------------------
 unique(events[grepl(".*tornado.*",events)]) #look for uniques tornados
 unique(events[grepl(".*flood.*",events)]) #look for uniques floods
-#------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------
 
 events <- gsub(".*tornado.*", "tornado", events)
 events <- gsub(".*flood.*", "flood", events)
@@ -49,10 +50,33 @@ stormData$EVTYPE <- events
 #No Further data processing will be perform
 
 #---- Sumarize Data ---------
-
-eventsData <- ddply(stormData, .(EVTYPE), summarise,
+library(plyr)
+#Events types that are most harmful to population health
+casualities <- ddply(stormData, .(EVTYPE), summarise,
                     FATAL = sum(FATALITIES),
                     INJUR = sum(INJURIES))
+health_top10 <- head(casualities[order(casualities$FATAL + casualities$INJUR, decreasing=T),] , 10)
+top10 <- health_top10$EVTYPE
+
+#Preparing the ggplot
+fatalities_p <- health_top10[,1:2]
+names(fatalities_p) <- c("EVENT","CASUALITIES")
+fatalities_p$TYPE <- "Fatalities"
+
+injuries_p <- health_top10[,c(1,3)]
+names(injuries_p) <- c("EVENT","CASUALITIES")
+injuries_p$TYPE <- "Injuries"
+
+health_plot <- rbind(fatalities_p , injuries_p)
+health_plot$EVENT <- factor(health_plot$EVENT , levels = top10)
+health_plot <- health_plot[order(health_plot$EVENT, decreasing=T),]
+
+library(ggplot2)
+ggplot(health_plot, aes(x=EVENT, y=CASUALITIES, fill=TYPE)) + 
+    geom_bar(stat="identity") + 
+    scale_fill_manual(values = c("red", "orange")) +
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+    
 
 #----------------------------
 
@@ -82,21 +106,17 @@ qplot(data = stormTimeLine, DATE, FATCUMSUM, geom="step")
 #path <- "./DataScience/repdata-data-StormData.csv"
 #stormData <- read.csv(file = path)
 
-#find the event types that are most harmful to population health
+
 library(plyr)
 library(ggplot2)
 
-incidents <- ddply(stormData, .(EVTYPE), summarise,
-                   fatalities = sum(FATALITIES),
-                   injuries = sum(INJURIES))
-head(incidents)
+
 
 #qplot(data = incidents, 
 #      x=EVTYPE, y=cumsum(fatalities)) + geom_step
 
 
-fatalData <- head(incidents[order(incidents$fatalities, decreasing = T), ], 10)
-injurData <- head(incidents[order(incidents$injuries, decreasing = T), ], 10)
+gggg
 
 #Top 10 events that caused largest number of deaths are
 
