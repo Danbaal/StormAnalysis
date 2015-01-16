@@ -20,23 +20,25 @@ stormData <- read_data("repdata-data-StormData.csv.bz2",
 # ------ Cleanin the Data -----
 
 #number of unique event types
-length(unique(stormData$EVTYPE))
+length(unique(stormData$EVTYPE)) #985
 
 #Cleaning the Data
 events <- tolower(stormData$EVTYPE) #all characters to lowercase
 events <- gsub("[[:blank:][:punct:]+]", " ", events) #cleaning punct. characters
 
+#----------------------------------Exploring grouping---------------------------------------------------
 unique(events[grepl(".*tornado.*",events)]) #look for uniques tornados
 unique(events[grepl(".*flood.*",events)]) #look for uniques floods
-unique(events[ (grepl(".*tstm.*",events) | grepl(".*thunderstorm.*",events))  & grepl(".*wind.*",events)]) #Thunderstorm winds
-unique(events[grepl(".*hurricane.*",events)]) #find hurricanes
-unique(events[grepl(".*drought.*",events)]) #find droughts
-unique(events[grepl(".*heat.*",events)]) #find heats... do after drought
-unique(events[grepl(".*hail.*",events)])# find hail
-unique(events[grepl(".*ice.*",events) | grepl(".*snow.*",events)]) # ice and snow
+#------------------------------------------------------------------------------------------------------
 
-
-events <- gsub(".*flood.*","flood", events) #grouping all kinds of floods
+events <- gsub(".*tornado.*", "tornado", events)
+events <- gsub(".*flood.*", "flood", events)
+events[ (grepl(".*tstm.*",events) | grepl(".*thunderstorm.*",events))  & grepl(".*wind.*",events)] <- "thunderstorm wind"
+events <- gsub(".*hurricane.*", "hurricane", events)
+events <- gsub(".*drought.*", "drought", events)
+events <- gsub(".*heat.*", "heat", events)
+events <- gsub(".*hail.*", "hail", events)
+events[grepl(".*ice.*",events) | grepl(".*snow.*",events)] <- "snow and ice"
 
 #number of unique event types after cleaning
 length(unique(events))
@@ -48,9 +50,9 @@ stormData$EVTYPE <- events
 
 #---- Sumarize Data ---------
 
-#eventsData <- ddply(stormData, .(EVTYPE), summarise,
-#                    fatalities = sum(FATALITIES),
-#                    injuries = sum(INJURIES))
+eventsData <- ddply(stormData, .(EVTYPE), summarise,
+                    FATAL = sum(FATALITIES),
+                    INJUR = sum(INJURIES))
 
 #----------------------------
 
