@@ -56,20 +56,20 @@ library(plyr)
 casualities <- ddply(stormData, .(EVTYPE), summarise,
                     FATAL = sum(FATALITIES),
                     INJUR = sum(INJURIES))
-health_top10 <- head(casualities[order(casualities$FATAL + casualities$INJUR, decreasing=T),] , 10)
-top10 <- health_top10$EVTYPE
+casualities_top10 <- head(casualities[order(casualities$FATAL + casualities$INJUR, decreasing=T),] , 10)
+health_top10 <- casualities_top10$EVTYPE
 
 #Preparing the ggplot
-fatalities_p <- health_top10[,1:2]
+fatalities_p <- casualities_top10[,1:2]
 names(fatalities_p) <- c("EVENT","CASUALITIES")
 fatalities_p$TYPE <- "Fatalities"
 
-injuries_p <- health_top10[,c(1,3)]
+injuries_p <- casualities_top10[,c(1,3)]
 names(injuries_p) <- c("EVENT","CASUALITIES")
 injuries_p$TYPE <- "Injuries"
 
 health_plot <- rbind(fatalities_p , injuries_p)
-health_plot$EVENT <- factor(health_plot$EVENT , levels = top10)
+health_plot$EVENT <- factor(health_plot$EVENT , levels = health_top10)
 health_plot <- health_plot[order(health_plot$EVENT, decreasing=T),]
 
 #Economic loss
