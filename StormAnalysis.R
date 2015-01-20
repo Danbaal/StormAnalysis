@@ -11,7 +11,7 @@ read_data <- function(fileName, source_url) {
 }
 #-------------------------------------------
 
-#setwd("~/DataScience/Reproducible Research/StormAnalysis")
+setwd("~/DataScience/StormAnalysis")
 #setwd("C:/Users/Dani/DataScience/Reproducible Research/StormAnalysis")
 
 #Downloading and Loading the Data
@@ -56,20 +56,20 @@ library(plyr)
 casualities <- ddply(stormData, .(EVTYPE), summarise,
                     FATAL = sum(FATALITIES),
                     INJUR = sum(INJURIES))
-casualities_top10 <- head(casualities[order(casualities$FATAL + casualities$INJUR, decreasing=T),] , 10)
-health_top10 <- casualities_top10$EVTYPE
+health_top10 <- head(casualities[order(casualities$FATAL + casualities$INJUR, decreasing=T),] , 10)
+top10 <- health_top10$EVTYPE
 
 #Preparing the ggplot
-fatalities_p <- casualities_top10[,1:2]
+fatalities_p <- health_top10[,1:2]
 names(fatalities_p) <- c("EVENT","CASUALITIES")
 fatalities_p$TYPE <- "Fatalities"
 
-injuries_p <- casualities_top10[,c(1,3)]
+injuries_p <- health_top10[,c(1,3)]
 names(injuries_p) <- c("EVENT","CASUALITIES")
 injuries_p$TYPE <- "Injuries"
 
 health_plot <- rbind(fatalities_p , injuries_p)
-health_plot$EVENT <- factor(health_plot$EVENT , levels = health_top10)
+health_plot$EVENT <- factor(health_plot$EVENT , levels = top10)
 health_plot <- health_plot[order(health_plot$EVENT, decreasing=T),]
 
 #Economic loss
@@ -98,29 +98,40 @@ econ_loss <- ddply(stormData, .(EVTYPE), summarize,
                    CROP = sum(CROPDMG))
 econ_top10 <- head(econ_loss[order(econ_loss$PROP + econ_loss$CROP, decreasing=T),] , 10)
 econ_top10
-econ_top10 <- econ_top10$EVTYPE
-
-#----------------------------
-
+econ_top10_types <- econ_top10$EVTYPE
 
 #---- Time Line Data --------
 
-stormTimeLine <- stormData[c('EVTYPE','FATALITIES','INJURIES')]
-stormTimeLine$DATE <- as.Date(stormData$BGN_DATE, '%m/%d/%Y')
+stormTimeLine <- stormData[stormData$EVTYPE %in% econ_top10_types[1:3], c('EVTYPE','PROPDMG','CROPDMG','BGN_DATE' )]
+stormTimeLine$DATE <- as.Date(stormTimeLine$BGN_DATE, '%m/%d/%Y')
+stormTimeLine$DMG <- stormTimeLine$PROPDMG + stormTimeLine$CROPDMG
+stormTimeLine <- stormTimeLine[,c('EVTYPE','DMG','DATE')]
 
 #Order by date
 stormTimeLine <- stormTimeLine[order(stormTimeLine$DATE),]
+
 #Get dates from 2001
 stormTimeLine <- subset(stormTimeLine, as.Date("1/1/2001" , "%m/%d/%Y") < DATE)
 #Delete irrelevant events
-stormTimeLine <- subset(stormTimeLine, FATALITIES != 0 | INJURIES != 0 )
-#CumSums
-stormTimeLine$FATCUMSUM = cumsum(stormTimeLine$FATALITIES)
-stormTimeLine$INJCUMSUM = cumsum(stormTimeLine$INJURIES)
-head(stormTimeLine)
+stormTimeLine <- subset(stormTimeLine, DMG != 0 )
+
+type1_data <- stormTimeLine[stormTimeLine$EVTYPE == econ_top10_types[1],]
+type2_data <- stormTimeLine[stormTimeLine$EVTYPE == econ_top10_types[2],]
+type3_data <- stormTimeLine[stormTimeLine$EVTYPE == econ_top10_types[3],]
+
+type1_data$CUMDMG <- cumsum(type1_data$DMG)
+type2_data$CUMDMG <- cumsum(type2_data$DMG)
+type3_data$CUMDMG <- cumsum(type3_data$DMG)
+
+stormTimeLine <- rbind(type1_data[c('EVTYPE','CUMDMG','DATE')],
+                       type2_data[c('EVTYPE','CUMDMG','DATE')],
+                       type3_data[c('EVTYPE','CUMDMG','DATE')])
+
+
+
 
 library(ggplot2)
-qplot(data = stormTimeLine, DATE, FATCUMSUM, geom="step")
+qplot(data = stormTimeLine, DATE, CUMDMG/1000000000, geom="step", color=EVTYPE)
 #------------------------------------------
 
 #Loading the Data
