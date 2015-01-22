@@ -131,7 +131,7 @@ stormTimeLine <- rbind(type1_data[c('EVTYPE','CUMDMG','DATE')],
 
 
 library(ggplot2)
-qplot(data = stormTimeLine, DATE, CUMDMG/1000000000, geom="step", color=EVTYPE)
+
 #------------------------------------------
 
 #Loading the Data
@@ -169,6 +169,15 @@ library(gridExtra)
 ggplot(health_plot, aes(x=EVENT, y=CASUALITIES, fill=TYPE)) + 
     geom_bar(stat="identity") + 
     scale_fill_manual(values = c("red", "orange")) +
-    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+    theme(axis.text.x = element_text(angle = 30, hjust = 1)) + 
+    ggtitle("Health Damage") +
+    ylab("Casualities") +    
+    xlab("Event")
 
-             
+
+ggplot(data = stormTimeLine, aes(x=DATE, y= CUMDMG/1000000000, color=EVTYPE)) + 
+  geom_step(stat="identity") +
+  ggtitle("Total loss evolution in XXI century") +
+  ylab("Loss ($bn)") +    
+  xlab("")
+
