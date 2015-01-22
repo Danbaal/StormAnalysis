@@ -178,6 +178,6 @@ ggplot(health_plot, aes(x=EVENT, y=CASUALITIES, fill=TYPE)) +
 ggplot(data = stormTimeLine, aes(x=DATE, y= CUMDMG/1000000000, color=EVTYPE)) + 
   geom_step(stat="identity") +
   ggtitle("Total loss evolution in XXI century") +
-  ylab("Loss ($bn)") +    
+  ylab("Losses ($bn)") +    
   xlab("")
 
