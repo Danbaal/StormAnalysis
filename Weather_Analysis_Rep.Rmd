@@ -74,8 +74,28 @@ stormData$EVTYPE <- events
 ```
 Now we have `r evtype_before` unique event types, and is time to sumarize the data we need.
 
-```{r}
-#---- Sumarize Data ---------
+The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. If we want to compare the severity of different event types properly, we must be sure that the events were equally recorded in the period of time we look. That's why we are focusing th analysis in the 21st century, because we know that the data is more reliable for our propuse. So we remove from the dataset all records of events that hapen before the 1-1-2001
+
+```{r XXICentury}
+
+stormData$DATE <- as.Date(stormData$BGN_DATE, '%m/%d/%Y')
+
+```
+
+The last thing we're going to do before sumarizeing the data is to remove all he variables we don't need for the analysis.
+
+```{r VariableFiltering}
+
+#Selecting the variables we need for the analysis
+stormData <- stormData[,c('EVTYPE','PROPDMG','PROPDMGEXP','CROPDMG',
+                          'CROPDMGEXP','DATE', 'FATALITIES', 'INJURIES')]
+
+```
+
+#---- Sumarize Data --------- Hacer título bien
+
+Know we are done with the data processing and we're going to starting sumerizeing
+
 library(plyr)
 
 ### Health Damage ###

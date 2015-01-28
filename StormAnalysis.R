@@ -11,8 +11,8 @@ read_data <- function(fileName, source_url) {
 }
 #-------------------------------------------------------------------
 
-setwd("~/DataScience/StormAnalysis")
-#setwd("C:/Users/Dani/DataScience/Reproducible Research/StormAnalysis")
+#setwd("~/DataScience/StormAnalysis")
+setwd("C:/Users/Dani/DataScience/Reproducible Research/StormAnalysis")
 
 #Downloading and Loading the Data
 stormData <- read_data("repdata-data-StormData.csv.bz2", 
@@ -48,6 +48,13 @@ length(unique(events))
 
 #update the dataframe
 stormData$EVTYPE <- events
+
+#Taking just records for this century
+stormData$DATE <- as.Date(stormData$BGN_DATE, '%m/%d/%Y')
+
+#Selecting the variables we need for the analysis
+stormData <- stormData[,c('EVTYPE','PROPDMG','PROPDMGEXP','CROPDMG',
+                          'CROPDMGEXP','DATE', 'FATALITIES', 'INJURIES')]
 
 #No Further data processing will be perform
 
@@ -119,7 +126,7 @@ econ_plot <- econ_plot[order(econ_plot$EVENT, decreasing=T),]
 #---- Time series Data --------
 
 stormTimeLine <- stormData[stormData$EVTYPE %in% econ_top10_names[1:3], c('EVTYPE','PROPDMG','CROPDMG','BGN_DATE' )]
-stormTimeLine$DATE <- as.Date(stormTimeLine$BGN_DATE, '%m/%d/%Y')
+#stormTimeLine$DATE <- as.Date(stormTimeLine$BGN_DATE, '%m/%d/%Y')
 stormTimeLine$DMG <- stormTimeLine$PROPDMG + stormTimeLine$CROPDMG
 stormTimeLine <- stormTimeLine[,c('EVTYPE','DMG','DATE')]
 
