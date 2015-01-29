@@ -79,6 +79,7 @@ The events in the database start in the year 1950 and end in November 2011. In t
 ```{r XXICentury}
 
 stormData$DATE <- as.Date(stormData$BGN_DATE, '%m/%d/%Y')
+stormData <- subset(stormData, as.Date("1/1/2001" , "%m/%d/%Y") < DATE)
 
 ```
 
@@ -96,12 +97,14 @@ stormData <- stormData[,c('EVTYPE','PROPDMG','PROPDMGEXP','CROPDMG',
 
 Know we are done with the data processing and we're going to starting sumerizeing
 
+### Health Damage Data ###
+
+Let's summarize the health data:
+
+```{r HelthSummarize}
 library(plyr)
-
-### Health Damage ###
-
-#Calculating the damage to population health that causes each event type
-casualities <- ddply(stormData, .(EVTYPE), summarise,
+#Calculate the damage to population health that causes each event type
+casualities <- ddply(stormData, .(EVTYPE), summarize,
                     FATAL = sum(FATALITIES),
                     INJUR = sum(INJURIES))
 
@@ -121,9 +124,12 @@ injuries_p$TYPE <- "Injuries"
 health_plot <- rbind(fatalities_p , injuries_p)
 health_plot$EVENT <- factor(health_plot$EVENT , levels = health_top10_names)
 health_plot <- health_plot[order(health_plot$EVENT, decreasing=T),]
+```
+### Economic loss Data ###
 
-### Economic loss ###
+Let's summarize the economic data:
 
+```{r }
 #We need to convert the PROPDMGEXP and CROPDMGEXP field into a
 #usuable factor and calculate the true damage to crops and property.
 
@@ -151,6 +157,20 @@ econ_loss <- ddply(stormData, .(EVTYPE), summarize,
 econ_top10 <- head(econ_loss[order(econ_loss$PROP + econ_loss$CROP, decreasing=T),] , 10)
 econ_top10_names <- econ_top10$EVTYPE
 
+
+#Preparing the ggplot
+property_p <- econ_top10[,1:2]
+names(property_p) <- c("EVENT","DAMAGE")
+property_p$TYPE <- "Property"
+
+crop_p <- econ_top10[,c(1,3)]
+names(crop_p) <- c("EVENT","DAMAGE")
+crop_p$TYPE <- "Crop"
+
+econ_plot <- rbind(property_p , crop_p)
+econ_plot$EVENT <- factor(econ_plot$EVENT , levels = econ_top10_names)
+econ_plot <- econ_plot[order(econ_plot$EVENT, decreasing=T),]
+
 ```
 
 With we've got so far, we can achieve our goal of evaluate the impact 
@@ -159,22 +179,19 @@ With we've got so far, we can achieve our goal of evaluate the impact
 
 #---- Time series Data --------
 
-stormTimeLine <- stormData[stormData$EVTYPE %in% econ_top10_types[1:3], c('EVTYPE','PROPDMG','CROPDMG','BGN_DATE' )]
-stormTimeLine$DATE <- as.Date(stormTimeLine$BGN_DATE, '%m/%d/%Y')
+stormTimeLine <- stormData[stormData$EVTYPE %in% econ_top10_names[1:3], c('EVTYPE','PROPDMG','CROPDMG','DATE' )]
 stormTimeLine$DMG <- stormTimeLine$PROPDMG + stormTimeLine$CROPDMG
 stormTimeLine <- stormTimeLine[,c('EVTYPE','DMG','DATE')]
 
 #Order by date
 stormTimeLine <- stormTimeLine[order(stormTimeLine$DATE),]
 
-#Get dates from 2001
-stormTimeLine <- subset(stormTimeLine, as.Date("1/1/2001" , "%m/%d/%Y") < DATE)
 #Delete irrelevant events
 stormTimeLine <- subset(stormTimeLine, DMG != 0 )
 
-type1_data <- stormTimeLine[stormTimeLine$EVTYPE == econ_top10_types[1],]
-type2_data <- stormTimeLine[stormTimeLine$EVTYPE == econ_top10_types[2],]
-type3_data <- stormTimeLine[stormTimeLine$EVTYPE == econ_top10_types[3],]
+type1_data <- subset(stormTimeLine, EVTYPE == econ_top10_names[1])
+type2_data <- subset(stormTimeLine, EVTYPE == econ_top10_names[2])
+type3_data <- subset(stormTimeLine, EVTYPE == econ_top10_names[3])
 
 type1_data$CUMDMG <- cumsum(type1_data$DMG)
 type2_data$CUMDMG <- cumsum(type2_data$DMG)
@@ -196,6 +213,7 @@ health_top10
 ```
 
 ```{r HealthPlot}
+library(ggplot2)
 
 ggplot(health_plot, aes(x=EVENT, y=CASUALITIES, fill=TYPE)) + 
     geom_bar(stat="identity") + 
@@ -214,19 +232,28 @@ econ_top10
 ```
 
 
-```{r HealthPlot}
+```{r EconPlot}
 
-ggplot(health_plot, aes(x=EVENT, y=CASUALITIES, fill=TYPE)) + 
+ggplot(econ_plot, aes(x=EVENT, y=DAMAGE, fill=TYPE)) + 
     geom_bar(stat="identity") + 
-    scale_fill_manual(values = c("red", "orange")) +
+    scale_fill_manual(values = c("dark green", "brown")) +
     theme(axis.text.x = element_text(angle = 30, hjust = 1)) + 
-    ggtitle("Health Damage") +
-    ylab("Casualities") +    
+    ggtitle("Economic Damage") +
+    ylab("Damage ($bn)") +    
     xlab("Event")
 
 ```
 
+```{r TimePlot}
+
+ggplot(data = stormTimeLine, aes(x=DATE, y= CUMDMG/1000000000, color=EVTYPE)) + 
+  geom_step(stat="identity") +
+  ggtitle("Total loss evolution in XXI century") +
+  ylab("Losses ($bn)") +    
+  xlab("")
+
+```
 
 ###Conclusions
 
-Conclusions
+Y aquí, voy a escribir las conclusiones.
