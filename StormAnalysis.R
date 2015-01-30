@@ -11,8 +11,8 @@ read_data <- function(fileName, source_url) {
 }
 #-------------------------------------------------------------------
 
-#setwd("~/DataScience/StormAnalysis")
-setwd("C:/Users/Dani/DataScience/Reproducible Research/StormAnalysis")
+setwd("~/DataScience/StormAnalysis")
+#setwd("C:/Users/Dani/DataScience/Reproducible Research/StormAnalysis")
 
 #Downloading and Loading the Data
 stormData <- read_data("repdata-data-StormData.csv.bz2", 
@@ -51,6 +51,8 @@ stormData$EVTYPE <- events
 
 #Taking just records for this century
 stormData$DATE <- as.Date(stormData$BGN_DATE, '%m/%d/%Y')
+#Get dates from 2001
+stormData <- subset(stormData, as.Date("1/1/2001" , "%m/%d/%Y") < DATE)
 
 #Selecting the variables we need for the analysis
 stormData <- stormData[,c('EVTYPE','PROPDMG','PROPDMGEXP','CROPDMG',
@@ -134,8 +136,6 @@ stormTimeLine <- stormTimeLine[,c('EVTYPE','DMG','DATE')]
 #Order by date
 stormTimeLine <- stormTimeLine[order(stormTimeLine$DATE),]
 
-#Get dates from 2001
-stormTimeLine <- subset(stormTimeLine, as.Date("1/1/2001" , "%m/%d/%Y") < DATE)
 #Delete irrelevant events
 stormTimeLine <- subset(stormTimeLine, DMG != 0 )
 
@@ -213,4 +213,16 @@ ggplot(data = stormTimeLine, aes(x=DATE, y= CUMDMG/1000000000, color=EVTYPE)) +
   ggtitle("Total loss evolution in XXI century") +
   ylab("Losses ($bn)") +    
   xlab("")
+
+stormDots <- subset(stormData, EVTYPE %in% health_top10_names[1:5])
+set.seed(69)
+ggplot(data = stormDots, aes(x=FATALITIES+INJURIES, y=runif(length(FATALITIES), max=0.1))) + 
+  geom_point(aes(colour=EVTYPE), size=3) +
+  scale_y_continuous(limits = c(-1, 1))
+
+ggplot(data = stormDots, aes(x=PROPDMG+CROPDMG, y=runif(length(FATALITIES), max=0.5))) + 
+  geom_point(aes(colour=EVTYPE), size=3) +
+  scale_y_continuous(limits = c(-1, 1))
+
+
 
