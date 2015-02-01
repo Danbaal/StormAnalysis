@@ -11,8 +11,8 @@ read_data <- function(fileName, source_url) {
 }
 #-------------------------------------------------------------------
 
-setwd("~/DataScience/StormAnalysis")
-#setwd("C:/Users/Dani/DataScience/Reproducible Research/StormAnalysis")
+#setwd("~/DataScience/StormAnalysis")
+setwd("C:/Users/Dani/DataScience/Reproducible Research/StormAnalysis")
 
 #Downloading and Loading the Data
 stormData <- read_data("repdata-data-StormData.csv.bz2", 
@@ -64,24 +64,39 @@ stormData <- stormData[,c('EVTYPE','PROPDMG','PROPDMGEXP','CROPDMG',
 library(plyr)
 
 #Events types that are most harmful to population health
-casualities <- ddply(stormData, .(EVTYPE), summarise,
+casualities <- ddply(stormData, .(EVTYPE), summarize,
                     FATAL = sum(FATALITIES),
                     INJUR = sum(INJURIES))
 health_top10 <- head(casualities[order(casualities$FATAL + casualities$INJUR, decreasing=T),] , 10)
 health_top10_names <- health_top10$EVTYPE
 
+#Grouping events that are'nt in top10
+stormData_others <- stormData
+stormData_others$EVTYPE[!(stormData_others$EVTYPE %in% health_top10_names)] <- "others"
+
+#Summarizeing again
+casualities <- ddply(stormData_others, .(EVTYPE), summarize,
+                     FATAL = sum(FATALITIES),
+                     INJUR = sum(INJURIES))
+
 #Preparing the ggplot
-fatalities_p <- health_top10[,1:2]
+fatalities_p <- casualities[,1:2]
 names(fatalities_p) <- c("EVENT","CASUALITIES")
 fatalities_p$TYPE <- "Fatalities"
 
-injuries_p <- health_top10[,c(1,3)]
+injuries_p <- casualities[,c(1,3)]
 names(injuries_p) <- c("EVENT","CASUALITIES")
 injuries_p$TYPE <- "Injuries"
 
 health_plot <- rbind(fatalities_p , injuries_p)
-health_plot$EVENT <- factor(health_plot$EVENT , levels = health_top10_names)
-health_plot <- health_plot[order(health_plot$EVENT, decreasing=T),]
+health_plot$EVENT <- factor(health_plot$EVENT , levels = c(health_top10_names,"others"))
+health_plot <- health_plot[order(health_plot$EVENT, decreasing=T),] #ordening
+
+#Preparing table
+names(casualities) <- c("Event", "Fatalities", "Injuries")
+casualities$Event <- factor(casualities$Event , levels = c(health_top10_names,"others"))
+casualities <- casualities[order(casualities$Event),]
+row.names(casualities) <- 1:11
 
 #Economic loss
 
@@ -104,26 +119,44 @@ stormData[stormData$CROPDMGEXP %in% "M",]$CROPDMGEXP <- 6
 stormData$PROPDMG <- stormData$PROPDMG * 10 ** as.numeric(stormData$PROPDMGEXP)
 stormData$CROPDMG <- stormData$CROPDMG * 10 ** as.numeric(stormData$CROPDMGEXP)
 
-econ_loss <- ddply(stormData, .(EVTYPE), summarise,
+econ_loss <- ddply(stormData, .(EVTYPE), summarize,
                    PROP = sum(PROPDMG),
                    CROP = sum(CROPDMG))
 
 econ_top10 <- head(econ_loss[order(econ_loss$PROP + econ_loss$CROP, decreasing=T),] , 10)
 econ_top10_names <- econ_top10$EVTYPE
 
+#Grouping events that are'nt in top10
+stormData_others <- stormData
+stormData_others$EVTYPE[!(stormData_others$EVTYPE %in% econ_top10_names)] <- "others"
+
+#Summarizeing again
+econ_loss <- ddply(stormData_others, .(EVTYPE), summarize,
+                   PROP = sum(PROPDMG),
+                   CROP = sum(CROPDMG))
 
 #Preparing the ggplot
-property_p <- econ_top10[,1:2]
+
+property_p <- econ_loss[,1:2]
 names(property_p) <- c("EVENT","DAMAGE")
 property_p$TYPE <- "Property"
 
-crop_p <- econ_top10[,c(1,3)]
+crop_p <- econ_loss[,c(1,3)]
 names(crop_p) <- c("EVENT","DAMAGE")
 crop_p$TYPE <- "Crop"
 
 econ_plot <- rbind(property_p , crop_p)
-econ_plot$EVENT <- factor(econ_plot$EVENT , levels = econ_top10_names)
+econ_plot$EVENT <- factor(econ_plot$EVENT , levels = c(econ_top10_names,"others"))
 econ_plot <- econ_plot[order(econ_plot$EVENT, decreasing=T),]
+
+#Preparing table
+econ_table <- econ_loss
+econ_table$PROP <- round(econ_table$PROP/1000000,2)
+econ_table$CROP <- round(econ_table$CROP/1000000,2)
+names(econ_table) <- c("Event", "Property loss (M$)", "Crop loss (M$)")
+econ_table$Event <- factor(econ_table$Event , levels = c(econ_top10_names,"others"))
+econ_table <- econ_table[order(econ_table$Event),]
+row.names(econ_table) <- 1:11
 
 #---- Time series Data --------
 

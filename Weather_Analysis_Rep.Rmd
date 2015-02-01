@@ -1,5 +1,5 @@
 
-##Health and Economic Impact of Weather Events in the US between in the 21st century
+##Health and Economic Impact of Weather Events in the US in the 21st century
 
 #####Daniel López Urbano
 ######January 25, 2015
@@ -83,7 +83,9 @@ stormData <- subset(stormData, as.Date("1/1/2001" , "%m/%d/%Y") < DATE)
 
 ```
 
-The last thing we're going to do before sumarizeing the data is to remove all he variables we don't need for the analysis.
+<- recuento de datos...
+
+The last thing to be done before sumarizeing the data is to remove all he variables we don't need for the analysis.
 
 ```{r VariableFiltering}
 
@@ -93,13 +95,13 @@ stormData <- stormData[,c('EVTYPE','PROPDMG','PROPDMGEXP','CROPDMG',
 
 ```
 
-#---- Sumarize Data --------- Hacer título bien
+###Data summarizing
 
 Know we are done with the data processing and we're going to starting sumerizeing
 
-### Health Damage Data ###
+#### Health Damage
 
-Let's summarize the health data:
+To find what events are most harmful to population health, the number of casualties are aggregated by the event type. Once aggregated, we can get the top 10 of the events that are the ones that will be shown in detail. The rest of the events will be grouped as "others".
 
 ```{r HelthSummarize}
 library(plyr)
@@ -110,28 +112,47 @@ casualities <- ddply(stormData, .(EVTYPE), summarize,
 
 #Top 10 of the most harmful events
 health_top10 <- head(casualities[order(casualities$FATAL + casualities$INJUR, decreasing=T),] , 10)
-health_top10_names <- health_top10$EVTYPE
+health_top10_names <- health_top10$EVTYPE #names of the top10
 
-#Preparing the ggplot
-fatalities_p <- health_top10[,1:2]
+#Grouping events that are'nt in top10
+stormData_others <- stormData
+stormData_others$EVTYPE[!(stormData_others$EVTYPE %in% health_top10_names)] <- "others"
+
+#Summarizeing again
+casualities <- ddply(stormData_others, .(EVTYPE), summarize,
+                     FATAL = sum(FATALITIES),
+                     INJUR = sum(INJURIES))
+#Total Casualities
+total_casualities <- sum(casualities$FATAL + casualities$INJUR)
+
+#Preparing the data for a nice plot
+
+fatalities_p <- casualities[,1:2]
 names(fatalities_p) <- c("EVENT","CASUALITIES")
 fatalities_p$TYPE <- "Fatalities"
 
-injuries_p <- health_top10[,c(1,3)]
+injuries_p <- casualities[,c(1,3)]
 names(injuries_p) <- c("EVENT","CASUALITIES")
 injuries_p$TYPE <- "Injuries"
 
 health_plot <- rbind(fatalities_p , injuries_p)
-health_plot$EVENT <- factor(health_plot$EVENT , levels = health_top10_names)
-health_plot <- health_plot[order(health_plot$EVENT, decreasing=T),]
+health_plot$EVENT <- factor(health_plot$EVENT , levels = c(health_top10_names,"others"))
+health_plot <- health_plot[order(health_plot$EVENT, decreasing=T),] #ordening
+
+#Preparing the table to show numeric results
+
+casual_table <- casualities
+names(casual_table) <- c("EVENT", "FATALITIES", "INJURIES")
+casual_table$EVENT <- factor(casual_table$EVENT , levels = c(health_top10_names,"others"))
+casual_table <- casual_table[order(casual_table$EVENT),]
+row.names(casual_table) <- 1:11
 ```
-### Economic loss Data ###
 
-Let's summarize the economic data:
+#### Economic loss
 
-```{r }
-#We need to convert the PROPDMGEXP and CROPDMGEXP field into a
-#usuable factor and calculate the true damage to crops and property.
+A similar process is implemented to summize the events that causes the biggest impact for the economy. Bbut first we need to convert the PROPDMGEXP and CROPDMGEXP fields into a usuable factor to calculate the true damage to crops and property.
+
+```{r EconSummarize}
 
 stormData$PROPDMGEXP<-toupper(stormData$PROPDMGEXP)
 stormData$CROPDMGEXP<-toupper(stormData$CROPDMGEXP)
@@ -157,61 +178,57 @@ econ_loss <- ddply(stormData, .(EVTYPE), summarize,
 econ_top10 <- head(econ_loss[order(econ_loss$PROP + econ_loss$CROP, decreasing=T),] , 10)
 econ_top10_names <- econ_top10$EVTYPE
 
+#Grouping events that are'nt in top10
+stormData_others <- stormData
+stormData_others$EVTYPE[!(stormData_others$EVTYPE %in% econ_top10_names)] <- "others"
 
-#Preparing the ggplot
-property_p <- econ_top10[,1:2]
+#Summarizeing again
+econ_loss <- ddply(stormData_others, .(EVTYPE), summarize,
+                   PROP = sum(PROPDMG),
+                   CROP = sum(CROPDMG))
+
+#Total Economic loss
+total_econ_loss <- sum(econ_loss$PROP + econ_loss$CROP)
+
+#Preparing the data for a nice plot
+
+property_p <- econ_loss[,1:2]
 names(property_p) <- c("EVENT","DAMAGE")
 property_p$TYPE <- "Property"
 
-crop_p <- econ_top10[,c(1,3)]
+crop_p <- econ_loss[,c(1,3)]
 names(crop_p) <- c("EVENT","DAMAGE")
 crop_p$TYPE <- "Crop"
 
 econ_plot <- rbind(property_p , crop_p)
-econ_plot$EVENT <- factor(econ_plot$EVENT , levels = econ_top10_names)
+econ_plot$EVENT <- factor(econ_plot$EVENT , levels = c(econ_top10_names,"others"))
 econ_plot <- econ_plot[order(econ_plot$EVENT, decreasing=T),]
 
-```
+#Preparing the table to show numeric results
 
-With we've got so far, we can achieve our goal of evaluate the impact 
-
-```{r TimeSeries}
-
-#---- Time series Data --------
-
-stormTimeLine <- stormData[stormData$EVTYPE %in% econ_top10_names[1:3], c('EVTYPE','PROPDMG','CROPDMG','DATE' )]
-stormTimeLine$DMG <- stormTimeLine$PROPDMG + stormTimeLine$CROPDMG
-stormTimeLine <- stormTimeLine[,c('EVTYPE','DMG','DATE')]
-
-#Order by date
-stormTimeLine <- stormTimeLine[order(stormTimeLine$DATE),]
-
-#Delete irrelevant events
-stormTimeLine <- subset(stormTimeLine, DMG != 0 )
-
-type1_data <- subset(stormTimeLine, EVTYPE == econ_top10_names[1])
-type2_data <- subset(stormTimeLine, EVTYPE == econ_top10_names[2])
-type3_data <- subset(stormTimeLine, EVTYPE == econ_top10_names[3])
-
-type1_data$CUMDMG <- cumsum(type1_data$DMG)
-type2_data$CUMDMG <- cumsum(type2_data$DMG)
-type3_data$CUMDMG <- cumsum(type3_data$DMG)
-
-stormTimeLine <- rbind(type1_data[c('EVTYPE','CUMDMG','DATE')],
-                       type2_data[c('EVTYPE','CUMDMG','DATE')],
-                       type3_data[c('EVTYPE','CUMDMG','DATE')])
-
+econ_table <- econ_loss
+econ_table$PROP <- round(econ_table$PROP/1000000,2)
+econ_table$CROP <- round(econ_table$CROP/1000000,2)
+names(econ_table) <- c("EVENT", "PROPERTY LOSS (M$)", "CROP LOSS (M$)")
+econ_table$EVENT <- factor(econ_table$EVENT , levels = c(econ_top10_names,"others"))
+econ_table <- econ_table[order(econ_table$EVENT),]
+row.names(econ_table) <- 1:11
 
 ```
+
 
 ###Results
 
+#####Health damage to the population
+
+Here is an ordered table showing the most harmful events to the population health. 
+
 ```{r Health}
 
-health_top10
+casual_table
 
 ```
-
+Here we show the graphic of the damage to the population health.
 ```{r HealthPlot}
 library(ggplot2)
 
@@ -225,35 +242,31 @@ ggplot(health_plot, aes(x=EVENT, y=CASUALITIES, fill=TYPE)) +
 
 ```
 
+#####Economic losses
+
+Here is an ordered table showing the losses, in millons of dollars, caused by the most severe events.
+
 ```{r property}
 
-econ_top10
+econ_table
 
 ```
 
+Here we show the graphic of the economic impact.
 
 ```{r EconPlot}
 
-ggplot(econ_plot, aes(x=EVENT, y=DAMAGE, fill=TYPE)) + 
+ggplot(econ_plot, aes(x=EVENT, y=DAMAGE/1000000, fill=TYPE)) + 
     geom_bar(stat="identity") + 
     scale_fill_manual(values = c("dark green", "brown")) +
     theme(axis.text.x = element_text(angle = 30, hjust = 1)) + 
     ggtitle("Economic Damage") +
-    ylab("Damage ($bn)") +    
+    ylab("Economic loss (M$)") +    
     xlab("Event")
 
 ```
 
-```{r TimePlot}
-
-ggplot(data = stormTimeLine, aes(x=DATE, y= CUMDMG/1000000000, color=EVTYPE)) + 
-  geom_step(stat="identity") +
-  ggtitle("Total loss evolution in XXI century") +
-  ylab("Losses ($bn)") +    
-  xlab("")
-
-```
 
 ###Conclusions
 
-Y aquí, voy a escribir las conclusiones.
+Tornados are, with significance difference, the most harmful wether event to the population health. So far this century has caused `r ` fatalities and `r ` injuries, representing the `r ` of the total casualities caused by wether events in this century. Weather events that cause an excessive heat are the second most harmful to the population health, they cause `r ` less casualities than tornados, but have caused almost the same number of fatalities. Otro evento que destaca por el numero de muertes es flood,. Sumarizing casualities,
