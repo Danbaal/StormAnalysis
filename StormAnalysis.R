@@ -64,10 +64,10 @@ stormData <- stormData[,c('EVTYPE','PROPDMG','PROPDMGEXP','CROPDMG',
 library(plyr)
 
 #Events types that are most harmful to population health
-casualities <- ddply(stormData, .(EVTYPE), summarize,
+casualties <- ddply(stormData, .(EVTYPE), summarize,
                     FATAL = sum(FATALITIES),
                     INJUR = sum(INJURIES))
-health_top10 <- head(casualities[order(casualities$FATAL + casualities$INJUR, decreasing=T),] , 10)
+health_top10 <- head(casualties[order(casualties$FATAL + casualties$INJUR, decreasing=T),] , 10)
 health_top10_names <- health_top10$EVTYPE
 
 #Grouping events that are'nt in top10
@@ -75,17 +75,17 @@ stormData_others <- stormData
 stormData_others$EVTYPE[!(stormData_others$EVTYPE %in% health_top10_names)] <- "others"
 
 #Summarizeing again
-casualities <- ddply(stormData_others, .(EVTYPE), summarize,
+casualties <- ddply(stormData_others, .(EVTYPE), summarize,
                      FATAL = sum(FATALITIES),
                      INJUR = sum(INJURIES))
 
 #Preparing the ggplot
-fatalities_p <- casualities[,1:2]
-names(fatalities_p) <- c("EVENT","CASUALITIES")
+fatalities_p <- casualties[,1:2]
+names(fatalities_p) <- c("EVENT","casualties")
 fatalities_p$TYPE <- "Fatalities"
 
-injuries_p <- casualities[,c(1,3)]
-names(injuries_p) <- c("EVENT","CASUALITIES")
+injuries_p <- casualties[,c(1,3)]
+names(injuries_p) <- c("EVENT","casualties")
 injuries_p$TYPE <- "Injuries"
 
 health_plot <- rbind(fatalities_p , injuries_p)
@@ -93,10 +93,10 @@ health_plot$EVENT <- factor(health_plot$EVENT , levels = c(health_top10_names,"o
 health_plot <- health_plot[order(health_plot$EVENT, decreasing=T),] #ordening
 
 #Preparing table
-names(casualities) <- c("Event", "Fatalities", "Injuries")
-casualities$Event <- factor(casualities$Event , levels = c(health_top10_names,"others"))
-casualities <- casualities[order(casualities$Event),]
-row.names(casualities) <- 1:11
+names(casualties) <- c("Event", "Fatalities", "Injuries")
+casualties$Event <- factor(casualties$Event , levels = c(health_top10_names,"others"))
+casualties <- casualties[order(casualties$Event),]
+row.names(casualties) <- 1:11
 
 #Economic loss
 
@@ -224,12 +224,12 @@ library(gridExtra)
 
 
 
-ggplot(health_plot, aes(x=EVENT, y=CASUALITIES, fill=TYPE)) + 
+ggplot(health_plot, aes(x=EVENT, y=casualties, fill=TYPE)) + 
     geom_bar(stat="identity") + 
     scale_fill_manual(values = c("red", "orange")) +
     theme(axis.text.x = element_text(angle = 30, hjust = 1)) + 
     ggtitle("Health Damage") +
-    ylab("Casualities") +    
+    ylab("casualties") +    
     xlab("Event")
 
 ggplot(econ_plot, aes(x=EVENT, y=DAMAGE, fill=TYPE)) + 

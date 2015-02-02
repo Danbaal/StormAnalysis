@@ -2,7 +2,6 @@
 ##Health and Economic Impact of Weather Events in the US in the 21st century
 
 #####Daniel López Urbano
-######January 25, 2015
 
 
 ####Abstract
@@ -107,12 +106,12 @@ To find what events are most harmful to population health, the number of casualt
 ```{r HelthSummarize}
 library(plyr)
 #Calculate the damage to population health that causes each event type
-casualities <- ddply(stormData, .(EVTYPE), summarize,
+casualties <- ddply(stormData, .(EVTYPE), summarize,
                     FATAL = sum(FATALITIES),
                     INJUR = sum(INJURIES))
 
 #Top 10 of the most harmful events
-health_top10 <- head(casualities[order(casualities$FATAL + casualities$INJUR, decreasing=T),] , 10)
+health_top10 <- head(casualties[order(casualties$FATAL + casualties$INJUR, decreasing=T),] , 10)
 health_top10_names <- health_top10$EVTYPE #names of the top10
 
 #Grouping events that are'nt in top10
@@ -120,20 +119,18 @@ stormData_others <- stormData
 stormData_others$EVTYPE[!(stormData_others$EVTYPE %in% health_top10_names)] <- "others"
 
 #Summarizeing again
-casualities <- ddply(stormData_others, .(EVTYPE), summarize,
+casualties <- ddply(stormData_others, .(EVTYPE), summarize,
                      FATAL = sum(FATALITIES),
                      INJUR = sum(INJURIES))
-#Total Casualities
-total_casualities <- sum(casualities$FATAL + casualities$INJUR)
 
 #Preparing the data for a nice plot
 
-fatalities_p <- casualities[,1:2]
-names(fatalities_p) <- c("EVENT","CASUALITIES")
+fatalities_p <- casualties[,1:2]
+names(fatalities_p) <- c("EVENT","casualties")
 fatalities_p$TYPE <- "Fatalities"
 
-injuries_p <- casualities[,c(1,3)]
-names(injuries_p) <- c("EVENT","CASUALITIES")
+injuries_p <- casualties[,c(1,3)]
+names(injuries_p) <- c("EVENT","casualties")
 injuries_p$TYPE <- "Injuries"
 
 health_plot <- rbind(fatalities_p , injuries_p)
@@ -142,7 +139,7 @@ health_plot <- health_plot[order(health_plot$EVENT, decreasing=T),] #ordening
 
 #Preparing the table to show numeric results
 
-casual_table <- casualities
+casual_table <- casualties
 names(casual_table) <- c("EVENT", "FATALITIES", "INJURIES")
 casual_table$EVENT <- factor(casual_table$EVENT , levels = c(health_top10_names,"others"))
 casual_table <- casual_table[order(casual_table$EVENT),]
@@ -188,9 +185,6 @@ econ_loss <- ddply(stormData_others, .(EVTYPE), summarize,
                    PROP = sum(PROPDMG),
                    CROP = sum(CROPDMG))
 
-#Total Economic loss
-total_econ_loss <- sum(econ_loss$PROP + econ_loss$CROP)
-
 #Preparing the data for a nice plot
 
 property_p <- econ_loss[,1:2]
@@ -233,12 +227,12 @@ Here we show the graphic of the damage to the population health.
 ```{r HealthPlot}
 library(ggplot2)
 
-ggplot(health_plot, aes(x=EVENT, y=CASUALITIES, fill=TYPE)) + 
+ggplot(health_plot, aes(x=EVENT, y=casualties, fill=TYPE)) + 
     geom_bar(stat="identity") + 
     scale_fill_manual(values = c("red", "orange")) +
     theme(axis.text.x = element_text(angle = 30, hjust = 1)) + 
     ggtitle("Health Damage") +
-    ylab("Casualities") +    
+    ylab("casualties") +    
     xlab("Event")
 
 ```
@@ -267,7 +261,24 @@ ggplot(econ_plot, aes(x=EVENT, y=DAMAGE/1000000, fill=TYPE)) +
 
 ```
 
+```{r values}
+#calculating some values for the conclusions
+
+total_fatalities <- sum(casual_table$FATAL)
+total_injuries <- sum(casual_table$INJUR)
+total_casualties <- total_fatalities + total_injuries
+tornado_c_stat <- (casual_table[1,2] + casual_table[1,3])/total_casualties
+heat_c_stat <- (casual_table[2,2] + casual_table[2,3])/total_casualties
+thtmwind_c_stat <- (casual_table[3,2] + casual_table[3,3])/total_casualties
+
+
+total_prop <- sum(econ_table$PROP)
+total_crop <- sum(econ_table$CROP)
+total_econ_loss <- total_prop + total_crop
+
+
+```
 
 ###Conclusions
 
-So far this century, severe weather events has caused `r ` fatalities and `r ` injuries, resulting in a total of `r ` casualities. Turns out that tornados are the most harmful wether event to the population health, with significance difference. They has caused `r ` fatalities and `r ` injuries, representing the `r ` of the total casualities caused by wether events in this century. Weather events that cause an excessive heat are the second most harmful to the population health, they cause `r ` less casualities than tornados, but have caused almost the same number of fatalities. Otro evento que destaca por el numero de muertes es flood,. Sumarizing casualities,
+So far this century, weather events has caused `r format(total_fatalities, nsmall=0)` fatalities and `r format(total_injuries, nsmall=0)` injuries, resulting in a total of `r format(total_casualties, nsmall=0)` casualties. Turns out that tornados are the most harmful weather event to the population health. They has caused 1152 fatalities and 14331 injuries, representing the `r round(tornado_c_stat*100, digits = 2)`% of the total casualties caused by weather events in this century. After the tornadoes, the second place, in total number of casualties, comes the events related with a excessive heat...  Weather events that cause an excessive heat are the second most harmful to the population health, they cause `r ` less casualties than tornados, but have caused almost the same number of fatalities. Otro evento que destaca por el numero de muertes es flood,. Sumarizing casualties,
