@@ -83,8 +83,6 @@ stormData <- subset(stormData, as.Date("1/1/2001" , "%m/%d/%Y") < DATE)
 
 ```
 
-<- recuento de datos...
-
 The last thing to be done before sumarizeing the data is to remove all he variables we don't need for the analysis.
 
 ```{r VariableFiltering}
@@ -93,7 +91,10 @@ The last thing to be done before sumarizeing the data is to remove all he variab
 stormData <- stormData[,c('EVTYPE','PROPDMG','PROPDMGEXP','CROPDMG',
                           'CROPDMGEXP','DATE', 'FATALITIES', 'INJURIES')]
 
+data_dim <- dim(stormData)
 ```
+
+After the data processing, we have a dataset with `r data_dim[1]` records and `r data_dim[2]` variables.
 
 ###Data summarizing
 
@@ -269,4 +270,4 @@ ggplot(econ_plot, aes(x=EVENT, y=DAMAGE/1000000, fill=TYPE)) +
 
 ###Conclusions
 
-Tornados are, with significance difference, the most harmful wether event to the population health. So far this century has caused `r ` fatalities and `r ` injuries, representing the `r ` of the total casualities caused by wether events in this century. Weather events that cause an excessive heat are the second most harmful to the population health, they cause `r ` less casualities than tornados, but have caused almost the same number of fatalities. Otro evento que destaca por el numero de muertes es flood,. Sumarizing casualities,
+So far this century, severe weather events has caused `r ` fatalities and `r ` injuries, resulting in a total of `r ` casualities. Turns out that tornados are the most harmful wether event to the population health, with significance difference. They has caused `r ` fatalities and `r ` injuries, representing the `r ` of the total casualities caused by wether events in this century. Weather events that cause an excessive heat are the second most harmful to the population health, they cause `r ` less casualities than tornados, but have caused almost the same number of fatalities. Otro evento que destaca por el numero de muertes es flood,. Sumarizing casualities,
