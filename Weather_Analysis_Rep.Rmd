@@ -44,7 +44,6 @@ There's no a standard format to name the events and we can find cases like `Fros
 
 ```{r Cleaning}
 
-#---- Cleaning the Data ---------
 events <- tolower(stormData$EVTYPE) #all characters to lowercase
 events <- gsub("[[:blank:][:punct:]+]", " ", events) #cleaning punct. characters
 
@@ -269,16 +268,19 @@ total_injuries <- sum(casual_table$INJUR)
 total_casualties <- total_fatalities + total_injuries
 tornado_c_stat <- (casual_table[1,2] + casual_table[1,3])/total_casualties
 heat_c_stat <- (casual_table[2,2] + casual_table[2,3])/total_casualties
-thtmwind_c_stat <- (casual_table[3,2] + casual_table[3,3])/total_casualties
 
 
 total_prop <- sum(econ_table$PROP)
 total_crop <- sum(econ_table$CROP)
 total_econ_loss <- total_prop + total_crop
-
+flood_total <- econ_table[1,2] + econ_table[1,3]
+flood_e_stat <- flood_total/total_econ_loss
 
 ```
 
 ###Conclusions
 
-So far this century, weather events has caused `r format(total_fatalities, nsmall=0)` fatalities and `r format(total_injuries, nsmall=0)` injuries, resulting in a total of `r format(total_casualties, nsmall=0)` casualties. Turns out that tornados are the most harmful weather event to the population health. They has caused 1152 fatalities and 14331 injuries, representing the `r round(tornado_c_stat*100, digits = 2)`% of the total casualties caused by weather events in this century. After the tornadoes, the second place, in total number of casualties, comes the events related with a excessive heat...  Weather events that cause an excessive heat are the second most harmful to the population health, they cause `r ` less casualties than tornados, but have caused almost the same number of fatalities. Otro evento que destaca por el numero de muertes es flood,. Sumarizing casualties,
+In the first decade of this century, weather events hasve caused `r format(total_fatalities, nsmall=0)` fatalities and `r format(total_injuries, nsmall=0)` injuries, resulting in a total of `r format(total_casualties, nsmall=0)` casualties. We can see the big picture about the damage each event have caused to the population health in de Health Damage graphic. Turns out that tornados are the most harmful weather event to the population health. They has caused 1152 fatalities and 14331 injuries, representing the `r round(tornado_c_stat*100, digits = 2)`% of the total casualties caused by weather events in this century. Heat also have a big impact on the health population, causing `r round(heat_c_stat*100, digits = 2)`% of the total casualties. Other weather events worth to mention because of its severity are thunderstorm winds, lightning and floods.
+
+Speaking about the economic impact, weather events have caused losses of $`r round(total_prop, digit=2)` million to properties and $`r round(total_crop, digit=2)` million in crops, resulting in a total of $`r round(total_econ_loss, digit=2)` million in losses. As we can see in the Economic Damage graphic showed before, floods are the most harmful to the ecomomy causing $`r round(flood_total, digit=2)` million in losses and representing the `r round(flood_e_stat, digit=2)`% of the total loss caused by weather events.
+
