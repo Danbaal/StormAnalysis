@@ -8,7 +8,7 @@
 
 Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
 
-In this report we will explore the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.
+The goal of this report is to analyze the impact of weather events from the beginning of the century to November 2011. For this purpose, we explore the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage. The events in the database start in the year 1950 and end in November 2011, but in the earlier years of the database fewer events were recorded, and that's why we will get only the events recorded on the 21st century. We are focusing the analysis on trying to answer two basic questions: Across the United States, which types of events are most harmful with respect to population health? and which types of events have the greatest economic consequences? So if we want to compare severity between events, the events must be equally recorded in the range of time we are looking for.
 
 ###Data Processing
 
@@ -39,8 +39,7 @@ The data contains `r data_dim[1]` records and `r data_dim[2]` variables.
 
 For the purpose of this study we have special interest in the variable 'EVTYPE', which tells us the type of weather event for each record. We find `r evtype_afer` unique event types, which is rather a high number. We need to do some cleaning.
 
-
-There's no a standard format to name the events and we can find cases like `Frost/Freeze`, `FROST/FREEZE` and `FROST\\FREZE` which obviously refer to the same type of event. --So we convert to lower case and remove punctuations.--
+There's no a standard format to name the events and we can find cases like `Frost/Freeze`, `FROST/FREEZE` and `FROST\\FREZE` which obviously refer to the same type of event. So the first step to unify events that we know are the same is to convert name events to lower case and remove punctuations.
 
 ```{r Cleaning}
 
@@ -49,8 +48,7 @@ events <- gsub("[[:blank:][:punct:]+]", " ", events) #cleaning punct. characters
 
 ```
 
-We can find several event types containing the word 'tornado' or 'flood'.
-Queremos hacer el analisis en terminos generales, sin considerar por separado diferentes tipos de tornado, asi que haremos limpieza de los datos.
+We can find several event types containing the word 'tornado' or 'flood'. In the generalistic context that we are, we want to count together events of the same type, no matter if it was a 'tornado f2' or a 'tornado f3'. For that purpose, we do the following clean up.
 
 ```{r EVTYPEGrouping}
 
@@ -72,7 +70,7 @@ stormData$EVTYPE <- events
 ```
 Now we have `r evtype_before` unique event types, and is time to sumarize the data we need.
 
-The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. If we want to compare the severity of different event types properly, we must be sure that the events were equally recorded in the period of time we look. That's why we are focusing th analysis in the 21st century, because we know that the data is more reliable for our propuse. So we remove from the dataset all records of events that hapen before the 1-1-2001
+The events in the database, as we have said, start in the year 1950 and end in November 2011. We just want to take into account events that have happen on the 21st century, so we remove from the dataset all records of events that hapen before the 1-1-2001.
 
 ```{r XXICentury}
 
@@ -81,7 +79,7 @@ stormData <- subset(stormData, as.Date("1/1/2001" , "%m/%d/%Y") < DATE)
 
 ```
 
-The last thing to be done before sumarizeing the data is to remove all he variables we don't need for the analysis.
+The last thing to be done before sumarizeing, is to remove all he variables we don't need for the analysis.
 
 ```{r VariableFiltering}
 
@@ -96,11 +94,11 @@ After the data processing, we have a dataset with `r data_dim[1]` records and `r
 
 ###Data summarizing
 
-Know we are done with the data processing and we're going to starting sumerizeing
+Now we are done with the data processing and we're going to starting summarizing.
 
 #### Health Damage
 
-To find what events are most harmful to population health, the number of casualties are aggregated by the event type. Once aggregated, we can get the top 10 of the events that are the ones that will be shown in detail. The rest of the events will be grouped as "others".
+To find what events are most harmful to population health, the number of casualties are aggregated by the event type. Once aggregated, we can get the top 10 events that are the ones that will be shown in detail. The rest of the events will be grouped as "others".
 
 ```{r HelthSummarize}
 library(plyr)
@@ -147,7 +145,7 @@ row.names(casual_table) <- 1:11
 
 #### Economic loss
 
-A similar process is implemented to summize the events that causes the biggest impact for the economy. Bbut first we need to convert the PROPDMGEXP and CROPDMGEXP fields into a usuable factor to calculate the true damage to crops and property.
+A similar process is implemented to summize the events that causes the biggest impact for the economy. But first we need to convert the PROPDMGEXP and CROPDMGEXP fields into a usable factor to calculate the true damage to crops and property.
 
 ```{r EconSummarize}
 
@@ -280,7 +278,7 @@ flood_e_stat <- flood_total/total_econ_loss
 
 ###Conclusions
 
-In the first decade of this century, weather events hasve caused `r format(total_fatalities, nsmall=0)` fatalities and `r format(total_injuries, nsmall=0)` injuries, resulting in a total of `r format(total_casualties, nsmall=0)` casualties. We can see the big picture about the damage each event have caused to the population health in de Health Damage graphic. Turns out that tornados are the most harmful weather event to the population health. They has caused 1152 fatalities and 14331 injuries, representing the `r round(tornado_c_stat*100, digits = 2)`% of the total casualties caused by weather events in this century. Heat also have a big impact on the health population, causing `r round(heat_c_stat*100, digits = 2)`% of the total casualties. Other weather events worth to mention because of its severity are thunderstorm winds, lightning and floods.
+In the first decade of this century, weather events have caused `r format(total_fatalities, nsmall=0)` fatalities and `r format(total_injuries, nsmall=0)` injuries, resulting in a total of `r format(total_casualties, nsmall=0)` casualties. We can see the big picture about the damage each event has caused to the population health in de Health Damage graphic. It turns out that tornados are the most harmful weather event to the population health. They have caused 1152 fatalities and 14331 injuries, representing the `r round(tornado_c_stat*100, digits = 2)`% of the total casualties caused by weather events in this century. Heat also has a big impact on the health population, causing `r round(heat_c_stat*100, digits = 2)`% of the total casualties. Other weather events worth to mention because of its severity are thunderstorm winds, lightning and floods.
 
-Speaking about the economic impact, weather events have caused losses of $`r round(total_prop, digit=2)` million to properties and $`r round(total_crop, digit=2)` million in crops, resulting in a total of $`r round(total_econ_loss, digit=2)` million in losses. As we can see in the Economic Damage graphic showed before, floods are the most harmful to the ecomomy causing $`r round(flood_total, digit=2)` million in losses and representing the `r round(flood_e_stat, digit=2)`% of the total loss caused by weather events.
+Speaking about the economic impact, weather events have caused losses of $`r format(total_prop, nsmall=0)` million to properties and $`r format(total_crop, nsmall=0)` million in crops, resulting in a total of $`r format(total_econ_loss, nsmall=0)` million in losses. As we can see in the Economic Damage graphic showed before, floods are the most harmful to the ecomomy causing $`r format(flood_total, nsmall=0)` million in losses and representing the `r round(flood_e_stat*100, digit=2)`% of the total loss caused by weather events.
 
